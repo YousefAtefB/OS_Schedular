@@ -3,12 +3,15 @@
 #include "string.h"
 
 
+#define fcfs 1
+
 //this integer indicates the algorithm currently being used
 int algo_typ;
 
 // struct represent one element of the pcb
 struct pcb_node
 {
+    int pid;
     int arrival_time;
     int running_time;
     int priority;
@@ -94,7 +97,18 @@ void arrived()
         execl(cwd,str_running_time,NULL);
     }
 
+    pcb[temp.id].pid=pid;
 
-    
+    // stop the signal after forking it so it won't start right away
+    kill(pid,SIGSTOP);
+
+    // insert the process id inside the algorithm datastructure
+    switch (algo_typ)
+    {
+        case fcfs:
+            
+        break;
+
+    }
 
 }
