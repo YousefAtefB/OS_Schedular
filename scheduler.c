@@ -25,12 +25,14 @@ queue *q;
 // struct represent one element of the pcb
 struct pcb_node
 {
-    int pid;
+    int pid; 
     int arrival_time;
     int running_time;
     int priority;
     int remaining_time;
-    int waiting_time;
+    // to avoid updating all the processes in the waiting list we can calculate this using  
+    // waiting_time = (current clock-arrival_time)-(running_time-remaining_time) 
+    int waiting_time;  
     int state;
 };
 
@@ -178,7 +180,18 @@ void schedule()
 
 }
 
-void timestep()
+
+// this integer holds the last value of the clock which helps us to keep track of the change of the clock
+int prevtime=0;
+
+// this function returns boolean represents whether the time has changed or not and updates the prevtime variable
+// it also changes the running processs remaining time
+bool timestep()
 {
-    
+    if(getClk()==prevtime)
+        return false;
+    prevtime=getClk();
+    if(cur_pro!=-1)
+        pcb[cur_pro].remaining_time--;
+    return true;    
 }
