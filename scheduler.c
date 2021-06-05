@@ -1,12 +1,26 @@
 #include "headers.h"
 
 #include "string.h"
+#include "Queue.c"
 
+// algorithms
+#define FCFS 1
 
-#define fcfs 1
+// states
+#define ARRIVED 0
+#define STARTED 1
+#define STOPPED 2
+#define RESUMED 3
+#define FINISHED 4
 
 //this integer indicates the algorithm currently being used
 int algo_typ;
+
+//this integer is the id of the current running process
+int cur_pro=-1;
+
+// queue to hold the id of the arrived processes in case of alogrithm type fcfs
+queue *q;
 
 // struct represent one element of the pcb
 struct pcb_node
@@ -36,8 +50,12 @@ struct process_arrived
 
 typedef struct process_arrived process_arrived;
 
+
+
+
 void initialize();
 void arrived();
+void schedule();
 
 int main(int argc, char *argv[])
 {
@@ -51,6 +69,8 @@ int main(int argc, char *argv[])
     while(true)
     {
         arrived();
+        schedule();
+        timestep();
     }
 
     destroyClk(true);
@@ -63,6 +83,15 @@ void initialize()
     // recieving the algorithm type
     algo_typ=1;
     
+    // intialize the chosen algo
+    switch(algo_typ)
+    {
+        case FCFS:
+            // intializing a queue used in the algo 
+            q=queue_init();
+        break;
+    }
+
     // recieving the number of processes
     int N=2;
     pcb=malloc(sizeof(pcb_node)*(N+1));
@@ -105,10 +134,51 @@ void arrived()
     // insert the process id inside the algorithm datastructure
     switch (algo_typ)
     {
-        case fcfs:
-            
+        case FCFS:
+            queue_push(q,temp.id);
         break;
 
     }
 
+}
+
+
+
+// this function is responsible for scheduling the processes based on the chosen algo
+void schedule()
+{
+
+    switch (algo_typ)
+    {
+        case FCFS:
+            //check if current running process finished remove it and remove its ((block)) change its state
+            if(cur_pro!=-1)
+            {
+                if(pcb[cur_pro].remaining_time<=0)
+                {    
+                    cur_pro=-1;
+                    pcb[cur_pro].state=FINISHED;
+                }
+            }
+            // no current running process then we should get the first process arrived which is the top on in the queue
+            if(cur_pro==-1)
+            {
+                // if queue is not empty take the top process start it and change its state
+                if(queue_empty()==0)
+                {
+                    cur_pro=queue_front(q);
+                    queue_pop(q);
+                    pcb[cur_pro].state=STARTED;
+                    kill(pcb[cur_pro].pid,SIGCONT);
+                }
+            }
+        break;
+
+    }
+
+}
+
+void timestep()
+{
+    
 }
