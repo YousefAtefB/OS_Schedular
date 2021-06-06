@@ -1,5 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
+#include"headers.h"
 
 typedef struct node node;
 typedef struct queue queue;
@@ -66,6 +67,12 @@ int queue_front(queue * q)
 bool queue_empty(queue * q)
 {
     return q->rear==NULL;
+}
+
+//this function free the queue
+void queue_destroy(queue*q)
+{
+    free(q);
 }
 
 int main()

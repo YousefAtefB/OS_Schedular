@@ -42,9 +42,11 @@ void Max_Heap_heapup(Max_Heap *heap ,int indx)
 }
 
 // this function adds an element to the heap to the right position
-void Max_Heap_add(Max_Heap *heap, heap_node num)
+void Max_Heap_add(Max_Heap *heap, int id,int data)
 {
-    heap->Arr[heap->size] = num;
+    heap_node element;
+    element.id=id;element.data=data;
+    heap->Arr[heap->size] = element;
     Max_Heap_heapup(heap,heap->size);
     heap->size++;
 }
@@ -86,29 +88,29 @@ bool Max_Heap_empty(Max_Heap*heap)
     return heap->size==0;
 }
 
+// this function free the heap
+void Max_Heap_destroy(Max_Heap*heap)
+{
+    free(heap->Arr);
+    free(heap);
+}
 
 
 void main()
 {
     Max_Heap*heap=Max_Heap_init(6);
-    heap_node u;
-    u.id=1;u.data=10;
-    Max_Heap_add(heap,u);
-    u.id=2;u.data=20;
-    Max_Heap_add(heap,u);
-    u.id=3;u.data=30;
-    Max_Heap_add(heap,u);
-    u.id=4;u.data=60;
-    Max_Heap_add(heap,u);
-    u.id=5;u.data=50;
-    Max_Heap_add(heap,u);
-    u.id=6;u.data=40;
-    Max_Heap_add(heap,u);
+
+    Max_Heap_add(heap,1,-10);
+    Max_Heap_add(heap,2,-20);
+    Max_Heap_add(heap,3,-40);
+    Max_Heap_add(heap,4,-50);
+    Max_Heap_add(heap,5,-30);
+    Max_Heap_add(heap,6,-60);
+
 
     while(!Max_Heap_empty(heap))
     {
         printf("\n%d\n",Max_Heap_getmax(heap));
     }
-
 
 }

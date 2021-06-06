@@ -2,9 +2,12 @@
 
 #include "string.h"
 #include "Queue.c"
+#include "Max-Heap.c"
 
 // algorithms
 #define FCFS 1
+#define SJF  2
+#define 
 
 // states
 #define ARRIVED 0
@@ -21,6 +24,9 @@ int cur_pro=-1;
 
 // queue to hold the id of the arrived processes in case of alogrithm type fcfs
 queue *q;
+
+// heap used as datastructure that holds the processes sorted based on some criteria
+Max_Heap *heap;
 
 // struct represent one element of the pcb
 struct pcb_node
@@ -59,6 +65,7 @@ typedef struct process_arrived process_arrived;
 void initialize();
 void arrived();
 void schedule();
+bool timestep();
 
 int main(int argc, char *argv[])
 {
@@ -85,7 +92,16 @@ void initialize()
 {
     // recieving the algorithm type
     algo_typ=FCFS;
-    
+
+    // recieving the number of processes
+    int N=2;
+    pcb=malloc(sizeof(pcb_node*)*(N+1));
+
+    // initialize the blocks with null
+    for(int i=0;i<=N;i++)
+        pcb[i]=NULL;
+
+
     // intialize the chosen algo
     switch(algo_typ)
     {
@@ -93,14 +109,12 @@ void initialize()
             // intializing a queue used in the algo 
             q=queue_init();
         break;
+        case SJF:
+            // intializing a heap used in the algo
+            heap=Max_Heap_init(N);
+        break;
     }
 
-    // recieving the number of processes
-    int N=2;
-    pcb=malloc(sizeof(pcb_node*)*(N+1));
-
-    for(int i=0;i<=N;i++)
-        pcb[i]=NULL;
 }
 
 // this function is responsible for recieving processes from the proccess_generator,fork it, store it in the pcb and put its id in the 
@@ -148,6 +162,12 @@ void arrived()
         case FCFS:
             queue_push(q,temp.id);
         break;
+        case SJF:
+            //here we insert the id of the process and the data that we want to sort based on it 
+            //here we entered the negative value of running_time because we want to sort ascendingly but the max heap sorts descendingly
+            Max_Heap_add(heap,temp.id,-temp.running_time);
+        break;
+
 
     }
 
@@ -159,21 +179,22 @@ void arrived()
 void schedule()
 {
 
+    //check if current running process finished remove it and remove its ((block)) change its state
+    if(cur_pro!=-1)
+    {
+        if(pcb[cur_pro]->remaining_time<=0)
+        {    
+            pcb[cur_pro]->state=FINISHED;
+            //___________print___________
+            free(pcb[cur_pro]);
+            pcb[cur_pro]=NULL;
+            cur_pro=-1;
+        }
+    }
+
     switch (algo_typ)
     {
         case FCFS:
-            //check if current running process finished remove it and remove its ((block)) change its state
-            if(cur_pro!=-1)
-            {
-                if(pcb[cur_pro]->remaining_time<=0)
-                {    
-                    cur_pro=-1;
-                    pcb[cur_pro]->state=FINISHED;
-                    //___________print___________
-                    free(pcb[cur_pro]);
-                    pcb[cur_pro]=NULL;
-                }
-            }
             // no current running process then we should get the first process arrived which is the top on in the queue
             if(cur_pro==-1)
             {
@@ -182,6 +203,20 @@ void schedule()
                 {
                     cur_pro=queue_front(q);
                     queue_pop(q);
+                    pcb[cur_pro]->state=STARTED;
+                    kill(pcb[cur_pro]->pid,SIGCONT);
+                    //___________print___________
+                }
+            }
+        break;
+        case SJF:
+            // no current running process then we should get the process with shortest running time which is the root of the heap 
+            if(cur_pro==-1)
+            {
+                // if heap is not empty take the root process start it and change its state
+                if(Max_Heap_empty(heap)==false)
+                {
+                    cur_pro=Max_Heap_getmax(heap);
                     pcb[cur_pro]->state=STARTED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
                     //___________print___________
