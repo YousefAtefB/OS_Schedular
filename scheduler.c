@@ -2,12 +2,12 @@
 
 #include "string.h"
 #include "Queue.c"
-#include "Max-Heap.c"
+#include "Min-Heap.c"
 
 // algorithms
 #define FCFS 1
 #define SJF  2
-#define 
+#define HPF  3
 
 // states
 #define ARRIVED 0
@@ -26,7 +26,7 @@ int cur_pro=-1;
 queue *q;
 
 // heap used as datastructure that holds the processes sorted based on some criteria
-Max_Heap *heap;
+Min_Heap *heap;
 
 // struct represent one element of the pcb
 struct pcb_node
@@ -111,7 +111,7 @@ void initialize()
         break;
         case SJF:
             // intializing a heap used in the algo
-            heap=Max_Heap_init(N);
+            heap=Min_Heap_init(N);
         break;
     }
 
@@ -164,8 +164,7 @@ void arrived()
         break;
         case SJF:
             //here we insert the id of the process and the data that we want to sort based on it 
-            //here we entered the negative value of running_time because we want to sort ascendingly but the max heap sorts descendingly
-            Max_Heap_add(heap,temp.id,-temp.running_time);
+            Min_Heap_add(heap,temp.id,temp.running_time);
         break;
 
 
@@ -214,9 +213,9 @@ void schedule()
             if(cur_pro==-1)
             {
                 // if heap is not empty take the root process start it and change its state
-                if(Max_Heap_empty(heap)==false)
+                if(Min_Heap_empty(heap)==false)
                 {
-                    cur_pro=Max_Heap_getmax(heap);
+                    cur_pro=Min_Heap_getMin(heap);
                     pcb[cur_pro]->state=STARTED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
                     //___________print___________
