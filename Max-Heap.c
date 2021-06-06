@@ -25,48 +25,6 @@ Max_Heap* Max_Heap_init(int size)
     return heap;
 }
 
-// void Max_Heap_init2(Max_Heap *Heap, int arr[], int size)
-// {
-//     Heap->size = 0;
-//     for (int i = 0; i < size; i++)
-//     {
-//         AddtoHeap(Heap, arr[i]);
-//     }
-// }
-
-// void swap(int *array, int i, int largest)
-// {
-//     int temp = array[i];
-//     array[i] = array[largest];
-//     array[largest] = array[i];
-// }
-
-// void Heapify(int *array, int size, int i)
-// {
-
-//     int largest = i;
-//     int leftchild = 2 * i + 1;
-//     int Rightchild = 2 * i + 2;
-//     if (array[leftchild] > array[largest])
-//     {
-//         largest = leftchild;
-//     }
-//     if (array[Rightchild] > array[largest])
-//     {
-//         largest = Rightchild;
-//     }
-
-//     swap(array, i, largest);
-// }
-
-// void MaxHeap(Max_Heap *Heap)
-// {
-//     for (int i = Heap->size - 1; i >= 0; i--)
-//     {
-//         Heapify(Heap->Arr, Heap->size, i);
-//     }
-// }
-
 // this function swap two elements inside a heap array
 void Max_Heap_swap(Max_Heap* heap,int u,int v)
 {
