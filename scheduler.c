@@ -8,6 +8,8 @@
 #define FCFS 1
 #define SJF  2
 #define HPF  3
+#define SRTN 4
+
 
 // states
 #define ARRIVED 0
@@ -109,7 +111,10 @@ void initialize()
             // intializing a queue used in the algo 
             q=queue_init();
         break;
+        
         case SJF:
+        case HPF:
+        case SRTN:
             // intializing a heap used in the algo
             heap=Min_Heap_init(N);
         break;
@@ -166,7 +171,14 @@ void arrived()
             //here we insert the id of the process and the data that we want to sort based on it 
             Min_Heap_add(heap,temp.id,temp.running_time);
         break;
-
+        case HPF:
+            //here we insert the id of the process and the data that we want to sort based on it 
+            Min_Heap_add(heap,temp.id,temp.priority);
+        break;
+        case SRTN:
+            //here we insert the id of the process and the data that we want to sort based on it 
+            Min_Heap_add(heap,temp.id,temp.running_time);
+        break;
 
     }
 
@@ -223,6 +235,72 @@ void schedule()
             }
         break;
 
+        case HPF:
+            // if heap is not empty take the root process as it's the one with highest priority 
+            if(Min_Heap_empty(heap)==false)
+            {
+                int id=Min_Heap_getMin(heap);
+                if(cur_pro==-1)
+                {
+                    // if no current running process, just run the one we got from the ready list and change its state
+                    cur_pro=id;
+                    pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
+                    kill(pcb[cur_pro]->pid,SIGCONT);
+                    //___________print___________
+                }
+                else if(pcb[id]->priority < pcb[cur_pro]->priority)
+                {
+                    // if there a process running but the one we took from the ready list has higher priority than the running one
+                    // so stop the running process ,insert it in the heap and run the other process
+                    pcb[cur_pro]->state=STOPPED;
+                    kill(pcb[cur_pro]->pid,SIGSTOP);
+                    Min_Heap_add(heap,cur_pro,pcb[cur_pro]->priority);
+                    //___________print___________
+                    kill(pcb[id]->pid,SIGCONT);
+                    pcb[id]->state=pcb[id]->state==ARRIVED?STARTED:RESUMED;
+                    cur_pro=id;
+                    //___________print___________
+                }
+                else
+                {
+                    // otherwise we can't run the process we got from the heap(ready list) so return it back to the heap
+                    Min_Heap_add(heap,id,pcb[id]->priority);
+                }
+            }
+        break;
+        case SRTN:
+          // if heap is not empty take the root process as it's the one with shortest remaining time
+            if(Min_Heap_empty(heap)==false)
+            {
+                int id=Min_Heap_getMin(heap);
+                if(cur_pro==-1)
+                {
+                    // if no current running process, just run the one we got from the ready list and change its state
+                    cur_pro=id;
+                    pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
+                    kill(pcb[cur_pro]->pid,SIGCONT);
+                    //___________print___________
+                }
+                else if(pcb[id]->remaining_time < pcb[cur_pro]->remaining_time)
+                {
+                    // if there a process running but the one we took from the ready list has higher priority than the running one
+                    // so stop the running process ,insert it in the heap and run the other process
+                    pcb[cur_pro]->state=STOPPED;
+                    kill(pcb[cur_pro]->pid,SIGSTOP);
+                    Min_Heap_add(heap,cur_pro,pcb[cur_pro]->remaining_time);
+                    //___________print___________
+                    kill(pcb[id]->pid,SIGCONT);
+                    pcb[id]->state=pcb[id]->state==ARRIVED?STARTED:RESUMED;
+                    cur_pro=id;
+                    //___________print___________
+                }
+                else
+                {
+                    // otherwise we can't run the process we got from the heap(ready list) so return it back to the heap
+                    Min_Heap_add(heap,id,pcb[id]->remaining_time);
+                }
+            }            
+        break;
     }
 
 }
