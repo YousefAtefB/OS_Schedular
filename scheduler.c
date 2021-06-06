@@ -39,7 +39,7 @@ struct pcb_node
 typedef struct pcb_node pcb_node;
 
 // the pcb
-pcb_node *pcb;
+pcb_node **pcb;
 
 // struct used to recieve element from the process generator
 struct process_arrived
@@ -53,6 +53,7 @@ struct process_arrived
 typedef struct process_arrived process_arrived;
 
 
+// OUTPUT NOTE: whenever you encounter ___________print___________  means we should output to file here
 
 
 void initialize();
@@ -83,7 +84,7 @@ int main(int argc, char *argv[])
 void initialize()
 {
     // recieving the algorithm type
-    algo_typ=1;
+    algo_typ=FCFS;
     
     // intialize the chosen algo
     switch(algo_typ)
@@ -96,7 +97,10 @@ void initialize()
 
     // recieving the number of processes
     int N=2;
-    pcb=malloc(sizeof(pcb_node)*(N+1));
+    pcb=malloc(sizeof(pcb_node*)*(N+1));
+
+    for(int i=0;i<=N;i++)
+        pcb[i]=NULL;
 }
 
 // this function is responsible for recieving processes from the proccess_generator,fork it, store it in the pcb and put its id in the 
@@ -106,13 +110,16 @@ void arrived()
     // recieving process
     process_arrived temp;
 
+    // making a new block for the process
+    pcb[temp.id]=malloc(sizeof(pcb_node));
+
     // inserting the process into the pcb
-    pcb[temp.id].arrival_time=temp.arrival_time;
-    pcb[temp.id].running_time=temp.running_time;
-    pcb[temp.id].priority=temp.priority;
-    pcb[temp.id].remaining_time=temp.running_time;
-    pcb[temp.id].waiting_time=0;
-    pcb[temp.id].state=0;
+    pcb[temp.id]->arrival_time=temp.arrival_time;
+    pcb[temp.id]->running_time=temp.running_time;
+    pcb[temp.id]->priority=temp.priority;
+    pcb[temp.id]->remaining_time=temp.running_time;
+    pcb[temp.id]->waiting_time=0;
+    pcb[temp.id]->state=ARRIVED;
 
     int pid=fork();
     if(pid==0)
@@ -128,7 +135,7 @@ void arrived()
         execl(cwd,str_running_time,NULL);
     }
 
-    pcb[temp.id].pid=pid;
+    pcb[temp.id]->pid=pid;
 
     // stop the signal after forking it so it won't start right away
     kill(pid,SIGSTOP);
@@ -156,10 +163,13 @@ void schedule()
             //check if current running process finished remove it and remove its ((block)) change its state
             if(cur_pro!=-1)
             {
-                if(pcb[cur_pro].remaining_time<=0)
+                if(pcb[cur_pro]->remaining_time<=0)
                 {    
                     cur_pro=-1;
-                    pcb[cur_pro].state=FINISHED;
+                    pcb[cur_pro]->state=FINISHED;
+                    //___________print___________
+                    free(pcb[cur_pro]);
+                    pcb[cur_pro]=NULL;
                 }
             }
             // no current running process then we should get the first process arrived which is the top on in the queue
@@ -170,8 +180,8 @@ void schedule()
                 {
                     cur_pro=queue_front(q);
                     queue_pop(q);
-                    pcb[cur_pro].state=STARTED;
-                    kill(pcb[cur_pro].pid,SIGCONT);
+                    pcb[cur_pro]->state=STARTED;
+                    kill(pcb[cur_pro]->pid,SIGCONT);
                 }
             }
         break;
@@ -192,6 +202,6 @@ bool timestep()
         return false;
     prevtime=getClk();
     if(cur_pro!=-1)
-        pcb[cur_pro].remaining_time--;
+        pcb[cur_pro]->remaining_time--;
     return true;    
 }
