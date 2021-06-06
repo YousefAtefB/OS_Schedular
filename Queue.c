@@ -48,15 +48,20 @@ void queue_push(queue *q,int x)
     q->rear=temp;
 }
 
-void queue_pop(queue *q)
+node* queue_pop(queue *q)
 {
     node *temp=q->front;
     q->front=q->front->nxt;
 
     if(q->front==NULL)
-        q->rear=NULL;
-
+         {
+          node* recieved= q->rear;
+          q->rear=NULL;
+          return recieved;
+         }
+         node* recieved= temp;
     free(temp);
+    return temp;
 }
 
 int queue_front(queue * q)

@@ -39,8 +39,9 @@ struct pcb_node
     int priority;
     int remaining_time;
     // to avoid updating all the processes in the waiting list we can calculate this using  
-    // waiting_time = (current clock-arrival_time)-(running_time-remaining_time) 
-    int waiting_time;  
+    // waiting_time = (current clock-arrival_time)-(running_time-remaining_time)
+    int Turn_around_time; 
+    int waiting_time;  //we can make it only by Turn_around time - running time;
     int state;
 };
 
