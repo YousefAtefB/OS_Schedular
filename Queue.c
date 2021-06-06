@@ -62,6 +62,12 @@ int queue_front(queue * q)
 {
     return q->front->data;
 }
+
+bool queue_empty(queue * q)
+{
+    return q->rear==NULL;
+}
+
 int main()
 {
     queue *q = queue_init();

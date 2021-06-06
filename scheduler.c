@@ -121,6 +121,8 @@ void arrived()
     pcb[temp.id]->waiting_time=0;
     pcb[temp.id]->state=ARRIVED;
 
+    //___________print___________
+
     int pid=fork();
     if(pid==0)
     {
@@ -176,12 +178,13 @@ void schedule()
             if(cur_pro==-1)
             {
                 // if queue is not empty take the top process start it and change its state
-                if(queue_empty()==0)
+                if(queue_empty(q)==false)
                 {
                     cur_pro=queue_front(q);
                     queue_pop(q);
                     pcb[cur_pro]->state=STARTED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
+                    //___________print___________
                 }
             }
         break;
