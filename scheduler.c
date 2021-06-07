@@ -9,7 +9,7 @@
 #define SJF  2
 #define HPF  3
 #define SRTN 4
-
+#define RR   5
 
 // states
 #define ARRIVED 0
@@ -23,6 +23,15 @@ int algo_typ;
 
 //this integer is the id of the current running process
 int cur_pro=-1;
+
+//the quantum specifies for each process in round robin
+int quantum=0;
+
+//the time left for the current running process to be preempted (remaining quantum time)
+int cur_pro_quantum=0;
+
+// upper bound to the number of processes (recieved from the process_generator which in fact is the number of processes in the input file) 
+int total_num_pro;
 
 // queue to hold the id of the arrived processes in case of alogrithm type fcfs
 queue *q;
@@ -71,6 +80,13 @@ bool timestep();
 
 int main(int argc, char *argv[])
 {
+    // reading the algorithm type from command line
+    algo_typ=atoi(argv[1]);
+    // reading the total number of processes (upper bound to the number of processes)
+    if(algo_typ==5)
+        total_num_pro=atoi(argv[2]);
+
+
     initClk();
 
     //TODO: implement the scheduler.
@@ -92,15 +108,11 @@ int main(int argc, char *argv[])
 //this function is responsible for initializing the scheduler, recieving the  algorithm type and the number of proccesses
 void initialize()
 {
-    // recieving the algorithm type
-    algo_typ=FCFS;
-
     // recieving the number of processes
-    int N=2;
-    pcb=malloc(sizeof(pcb_node*)*(N+1));
+    pcb=malloc(sizeof(pcb_node*)*(total_num_pro+1));
 
     // initialize the blocks with null
-    for(int i=0;i<=N;i++)
+    for(int i=0;i<=total_num_pro;i++)
         pcb[i]=NULL;
 
 
@@ -108,6 +120,7 @@ void initialize()
     switch(algo_typ)
     {
         case FCFS:
+        case RR:
             // intializing a queue used in the algo 
             q=queue_init();
         break;
@@ -116,7 +129,7 @@ void initialize()
         case HPF:
         case SRTN:
             // intializing a heap used in the algo
-            heap=Min_Heap_init(N);
+            heap=Min_Heap_init(total_num_pro);
         break;
     }
 
@@ -165,6 +178,7 @@ void arrived()
     switch (algo_typ)
     {
         case FCFS:
+        case RR:
             queue_push(q,temp.id);
         break;
         case SJF:
@@ -301,6 +315,28 @@ void schedule()
                 }
             }            
         break;
+        case RR:
+            // we can only run a new process if there is no current running process or the current running process has finished its quantum
+            if(queue_empty(q)==false && (cur_pro==-1 || cur_pro_quantum==0))
+            {
+                if(cur_pro!=-1)
+                {
+                    // if there a process running but it has finished its quantum time
+                    // so stop the running process ,insert it in the queue
+                    pcb[cur_pro]->state=STOPPED;
+                    kill(pcb[cur_pro]->pid,SIGSTOP);
+                    queue_push(q,cur_pro);
+                    //___________print___________
+                }
+                // if we reach this part of the code this means either no running process or its quantum has finished
+                // so we ought to get the front process from the queue
+                cur_pro=queue_front(q);
+                queue_pop(q);
+                kill(pcb[cur_pro]->pid,SIGCONT);
+                pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
+                //___________print___________
+            }
+        break;
     }
 
 }
@@ -310,7 +346,7 @@ void schedule()
 int prevtime=0;
 
 // this function returns boolean represents whether the time has changed or not and updates the prevtime variable
-// it also changes the running processs remaining time
+// it also changes the running processs remaining time and updates the current running process remaining quantum
 bool timestep()
 {
     if(getClk()==prevtime)
@@ -318,5 +354,7 @@ bool timestep()
     prevtime=getClk();
     if(cur_pro!=-1)
         pcb[cur_pro]->remaining_time--;
+    if(cur_pro_quantum>0)    
+        cur_pro_quantum--;
     return true;    
 }
