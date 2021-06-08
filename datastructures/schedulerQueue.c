@@ -1,6 +1,6 @@
 #include<stdio.h>
 #include<stdlib.h>
-#include"headers.h"
+#include"../headers.h"
 
 typedef struct node node;
 typedef struct queue queue;
@@ -75,20 +75,20 @@ void queue_destroy(queue*q)
     free(q);
 }
 
-int main()
-{
-    queue *q = queue_init();
-    queue_push(q,1);
-    queue_push(q,44);
-    queue_push(q,12);
-    queue_push(q,71);
+// int main()
+// {
+//     queue *q = queue_init();
+//     queue_push(q,1);
+//     queue_push(q,44);
+//     queue_push(q,12);
+//     queue_push(q,71);
 
-    for(int i=0;i<4;i++)
-    {
-        printf("%d\n",queue_front(q));
-        queue_pop(q);
-    }
+//     for(int i=0;i<4;i++)
+//     {
+//         printf("%d\n",queue_front(q));
+//         queue_pop(q);
+//     }
 
-    free(q);
+//     free(q);
 
-}
+// }

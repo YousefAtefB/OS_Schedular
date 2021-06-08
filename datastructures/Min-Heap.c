@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "headers.h"
+#include "../headers.h"
 
 // struct represents a single node of the elements of the heap
 typedef struct 
@@ -96,21 +96,21 @@ void Min_Heap_destroy(Min_Heap*heap)
 }
 
 
-void main()
-{
-    Min_Heap*heap=Min_Heap_init(6);
+// void main()
+// {
+//     Min_Heap*heap=Min_Heap_init(6);
 
-    Min_Heap_add(heap,1,10);
-    Min_Heap_add(heap,2,20);
-    Min_Heap_add(heap,3,40);
-    Min_Heap_add(heap,4,50);
-    Min_Heap_add(heap,5,30);
-    Min_Heap_add(heap,6,60);
+//     Min_Heap_add(heap,1,10);
+//     Min_Heap_add(heap,2,20);
+//     Min_Heap_add(heap,3,40);
+//     Min_Heap_add(heap,4,50);
+//     Min_Heap_add(heap,5,30);
+//     Min_Heap_add(heap,6,60);
 
 
-    while(!Min_Heap_empty(heap))
-    {
-        printf("\n%d\n",Min_Heap_getMin(heap));
-    }
+//     while(!Min_Heap_empty(heap))
+//     {
+//         printf("\n%d\n",Min_Heap_getMin(heap));
+//     }
 
-}
+// }

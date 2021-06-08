@@ -1,8 +1,10 @@
 #include "headers.h"
 
 #include "string.h"
-#include "schedulerQueue.c"
-#include "Min-Heap.c"
+#include "datastructures/schedulerQueue.c"
+#include "datastructures/Min-Heap.c"
+
+#include <errno.h>
 
 // algorithms
 #define FCFS 1
@@ -59,19 +61,27 @@ typedef struct pcb_node pcb_node;
 // the pcb
 pcb_node **pcb;
 
-// struct used to recieve element from the process generator
-struct process_arrived
+// structs used to recieve element from the process generator through the msgqueue
+typedef struct
 {
     int id;
-    int arrival_time;
-    int running_time;
+    int arrival;
+    int runtime;
     int priority;
-};
+}process;
 
-typedef struct process_arrived process_arrived;
+typedef struct 
+{
+  long mtype;
+  struct process *p;
+}msgbuff;
 
+//the msg queue used to communicate with the generator
+int msgqid;
 
 // OUTPUT NOTE: whenever you encounter ___________print___________  means we should output to file here
+
+
 
 
 void initialize();
@@ -81,12 +91,18 @@ bool timestep();
 
 int main(int argc, char *argv[])
 {
+    printf("\nwelcome to the scheduler %d\n",getpid());
+
     // reading the algorithm type from command line
     algo_typ=atoi(argv[1]);
-    // reading the total number of processes (upper bound to the number of processes)
+    
+    // reading the quantum used in algo 5
     if(algo_typ==5)
-        total_num_pro=atoi(argv[2]);
+        quantum=atoi(argv[2]);
+    // reading the total number of processes (upper bound to the number of processes)
+    total_num_pro=algo_typ==5?atoi(argv[3]):atoi(argv[2]);
 
+    printf("\nalgo=%d num=%d\n",total_num_pro);
 
     initClk();
 
@@ -98,8 +114,8 @@ int main(int argc, char *argv[])
     while(true)
     {
         arrived();
-        schedule();
-        timestep();
+//        schedule();
+//        timestep();
     }
 
     destroyClk(true);
@@ -109,8 +125,11 @@ int main(int argc, char *argv[])
 //this function is responsible for initializing the scheduler, recieving the  algorithm type and the number of proccesses
 void initialize()
 {
-    // recieving the number of processes
+    // initializing the out pcb
     pcb=malloc(sizeof(pcb_node*)*(total_num_pro+1));
+
+    //getting the id of the msgqueue used to communicate with the generator
+    msgqid = msgget(12613, IPC_CREAT | 0644);
 
     // initialize the blocks with null
     for(int i=0;i<=total_num_pro;i++)
@@ -140,61 +159,87 @@ void initialize()
 // datastructure of the algorithm
 void arrived()
 {
-    // recieving process
-    process_arrived temp;
-
-    // making a new block for the process
-    pcb[temp.id]=malloc(sizeof(pcb_node));
-
-    // inserting the process into the pcb
-    pcb[temp.id]->arrival_time=temp.arrival_time;
-    pcb[temp.id]->running_time=temp.running_time;
-    pcb[temp.id]->priority=temp.priority;
-    pcb[temp.id]->remaining_time=temp.running_time;
-    pcb[temp.id]->waiting_time=0;
-    pcb[temp.id]->state=ARRIVED;
-
-    //___________print___________
-
-    int pid=fork();
-    if(pid==0)
+    // recieving processes
+    while(true)
     {
-        // get current working directory
-        char cwd[200];
-        getcwd(cwd,200);
-        strcat(cwd,"/process.out");
-        // turn running time into string
-        char str_running_time[10];
-        sprintf(str_running_time,"%d",temp.running_time);
-        // swap the child with the process code and send it the running time
-        execl(cwd,str_running_time,NULL);
-    }
+        process temp;
+        msgbuff message;
+        
+        //getting a process from generator through msg queue 
+        msgrcv(msgqid,&message,sizeof(msgbuff)-sizeof(long),0,IPC_NOWAIT);
 
-    pcb[temp.id]->pid=pid;
+        if(errno=ENOMSG)
+            break;
 
-    // stop the signal after forking it so it won't start right away
-    kill(pid,SIGSTOP);
 
-    // insert the process id inside the algorithm datastructure
-    switch (algo_typ)
-    {
-        case FCFS:
-        case RR:
-            queue_push(q,temp.id);
-        break;
-        case SJF:
-            //here we insert the id of the process and the data that we want to sort based on it 
-            Min_Heap_add(heap,temp.id,temp.running_time);
-        break;
-        case HPF:
-            //here we insert the id of the process and the data that we want to sort based on it 
-            Min_Heap_add(heap,temp.id,temp.priority);
-        break;
-        case SRTN:
-            //here we insert the id of the process and the data that we want to sort based on it 
-            Min_Heap_add(heap,temp.id,temp.running_time);
-        break;
+        //moving the process from the message to variable temp
+        process * t=message.p;
+        temp.id=t->id;temp.arrival=temp.arrival;
+        temp.priority=t->priority;temp.runtime=t->runtime;
 
+        printf("\n%d ",temp.id);
+        if(temp.arrival==getClk())
+            printf("intime\n");
+        else if(temp.arrival>getClk())
+            printf("early\n");
+        else
+            printf("late\n");
+
+        continue;
+
+        // making a new block for the process
+        pcb[temp.id]=malloc(sizeof(pcb_node));
+
+        // inserting the process into the pcb
+        pcb[temp.id]->arrival_time=temp.arrival;
+        pcb[temp.id]->running_time=temp.runtime;
+        pcb[temp.id]->priority=temp.priority;
+        pcb[temp.id]->remaining_time=temp.runtime;
+        pcb[temp.id]->waiting_time=0;
+        pcb[temp.id]->state=ARRIVED;
+
+        //___________print___________
+
+        int pid=fork();
+        if(pid==0)
+        {
+            // get current working directory
+            char cwd[200];
+            getcwd(cwd,200);
+            strcat(cwd,"/process.out");
+            // turn running time into string
+            char str_running_time[10];
+            sprintf(str_running_time,"%d",temp.runtime);
+            // swap the child with the process code and send it the running time
+            execl(cwd,"./process.out",str_running_time,NULL);
+        }
+
+        pcb[temp.id]->pid=pid;
+
+        // stop the signal after forking it so it won't start right away
+        kill(pid,SIGSTOP);
+
+        // insert the process id inside the algorithm datastructure
+        switch (algo_typ)
+        {
+            case FCFS:
+            case RR:
+                queue_push(q,temp.id);
+            break;
+            case SJF:
+                //here we insert the id of the process and the data that we want to sort based on it 
+                Min_Heap_add(heap,temp.id,temp.runtime);
+            break;
+            case HPF:
+                //here we insert the id of the process and the data that we want to sort based on it 
+                Min_Heap_add(heap,temp.id,temp.priority);
+            break;
+            case SRTN:
+                //here we insert the id of the process and the data that we want to sort based on it 
+                Min_Heap_add(heap,temp.id,temp.runtime);
+            break;
+
+        }
     }
 
 }
