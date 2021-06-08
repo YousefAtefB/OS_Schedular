@@ -83,12 +83,19 @@ int msgqid;
 
 // the .log file that is used to write in it the scheduling flow
 FILE * log_out;
+FILE * log_out_pref;
 
 // indicates that all processes arrived
 bool allarrived;
 
 // keep track of number of processes in pcb
 int total_in_pcb;
+
+//some global variables using in .pref
+double Weighted_Turnaround_time =0;
+double Waiting =0;
+double running_process=0;
+
 
 // OUTPUT NOTE: whenever you encounter ___________print___________  means we should output to file here
 
@@ -100,6 +107,7 @@ void arrived();
 void schedule();
 bool timestep();
 void printstate(int id);
+void print_pref();
 void clearResources(int signum);
 
 
@@ -135,6 +143,8 @@ int main(int argc, char *argv[])
        timestep();
        fflush(stdout);
     }
+    print_pref();
+
 
     printf("\nscheduler: closing allarriver=%d total_in_pcb=%d \n",allarrived,total_in_pcb);
 
@@ -281,6 +291,12 @@ void schedule()
     {
         if(pcb[cur_pro]->remaining_time<=0)
         {    
+
+            Waiting +=pcb[cur_pro]->waiting_time;
+            running_process += pcb[cur_pro]->running_time;
+            Weighted_Turnaround_time += (getClk()-pcb[cur_pro]->arrival_time)/(pcb[cur_pro]->running_time);
+    
+
             pcb[cur_pro]->state=FINISHED;
             //___________print___________
             printstate(cur_pro);
@@ -471,4 +487,22 @@ void clearResources(int signum)
   printf("\nscheduler: terminating...\n");
   destroyClk(true);
   exit(0);
+}
+
+void print_pref(){
+
+    double Avg_Wta = Weighted_Turnaround_time/total_num_pro;
+    double Avg_Waiting = Waiting/total_num_pro;
+    double CPU_utilization = running_process*100/getClk();
+
+    // initialize Scheduler.pref
+    log_out_pref=fopen("scheduler.pref","w");
+    fprintf(log_out_pref,"CPU utilization = %f %%\n" , CPU_utilization);
+    fflush(log_out_pref);
+    fprintf(log_out_pref,"Avg WTA = %f \n" , Avg_Wta);
+    fflush(log_out_pref);
+    fprintf(log_out_pref,"Avg Waiting = %f \n" , Avg_Waiting);
+    fflush(log_out_pref);
+
+
 }
