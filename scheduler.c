@@ -56,6 +56,8 @@ struct pcb_node
     int state;
 };
 
+
+
 typedef struct pcb_node pcb_node;
 
 // the pcb
@@ -412,6 +414,7 @@ void schedule()
                     kill(pcb[cur_pro]->pid,SIGSTOP);
                     queue_push(q,cur_pro);
                     //___________print___________
+                    printf("\nscheduler: iam stopping one here");
                     printstate(cur_pro);
                 }
                 // if we reach this part of the code this means either no running process or its quantum has finished
@@ -421,7 +424,9 @@ void schedule()
                 kill(pcb[cur_pro]->pid,SIGCONT);
                 pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
                 //___________print___________
+                printf("\nscheduler: iam starting or resumming one here");
                 printstate(cur_pro);
+                cur_pro_quantum=quantum;
             }
         break;
     }
