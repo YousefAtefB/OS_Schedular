@@ -31,14 +31,14 @@ int main(int argc, char *argv[])
   q = malloc(sizeof(struct queue));
   initialize(q);
   // 1. Read the input files.
-  FILE *inFile = fopen("processes.txt", "r");
+  FILE *inFile = fopen(argv[1], "r");
   if (inFile == NULL)
   {
     printf("Error! Could not open file\n");
     exit(-1);
   }
   struct stat sb;
-  if (stat("processes.txt", &sb) == -1)
+  if (stat(argv[1], &sb) == -1)
   {
     perror("stat");
     exit(EXIT_FAILURE);
@@ -79,9 +79,9 @@ int main(int argc, char *argv[])
   
   int i=0;
   parms[i++] = "./scheduler.out";
-  parms[i++] = argv[1];
-  if(argv[1][0]=='5')
-    parms[i++] = argv[2]; 
+  parms[i++] = argv[3];
+  if(argv[3][0]=='5')
+    parms[i++] = argv[5]; 
   sprintf(parms[i++],"%d",total_num_pro);
   parms[i++] = NULL;
 

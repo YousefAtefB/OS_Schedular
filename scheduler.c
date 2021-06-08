@@ -235,7 +235,7 @@ void arrived()
 
         printf("\nscheduler: print arrived\n");
         //___________print___________
-        printstate(temp.id);
+//        printstate(temp.id);
 
 
         printf("\nscheduler: forking\n");
@@ -292,10 +292,10 @@ void schedule()
         if(pcb[cur_pro]->remaining_time<=0)
         {    
 
-            Waiting +=pcb[cur_pro]->waiting_time;
+            int curclk=getClk();
+            Waiting+=(curclk-pcb[cur_pro]->arrival_time)-(pcb[cur_pro]->running_time);
             running_process += pcb[cur_pro]->running_time;
-            Weighted_Turnaround_time += (getClk()-pcb[cur_pro]->arrival_time)/(pcb[cur_pro]->running_time);
-    
+            Weighted_Turnaround_time += (curclk-pcb[cur_pro]->arrival_time)/(1.0*pcb[cur_pro]->running_time);
 
             pcb[cur_pro]->state=FINISHED;
             //___________print___________
@@ -471,10 +471,18 @@ bool timestep()
 // this function is responsible for printing some process into the output file 
 void printstate(int id)
 {
-    int waiting_time=(getClk()-pcb[id]->arrival_time)-(pcb[id]->running_time-pcb[id]->remaining_time);
+    int curclk=getClk();
+    int waiting_time=(curclk-pcb[id]->arrival_time)-(pcb[id]->running_time-pcb[id]->remaining_time);
     char* hash[]={"arrived","started","stopped","resumed","finished"};
-    fprintf(log_out,"#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
-    getClk(),id,hash[pcb[id]->state],pcb[id]->arrival_time,pcb[id]->running_time,pcb[id]->remaining_time,waiting_time);
+    fprintf(log_out,"At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d",
+    curclk,id,hash[pcb[id]->state],pcb[id]->arrival_time,pcb[id]->running_time,pcb[id]->remaining_time,waiting_time);
+    if(pcb[id]->state==FINISHED)
+    {
+        int TA=curclk-pcb[id]->arrival_time;
+        double WTA=TA/(1.0*pcb[id]->running_time);
+        fprintf(log_out,"\tTA\t%d\t%.2f",TA,WTA);
+    }
+    fprintf(log_out,"\n");
     fflush(log_out);
 }
 
@@ -493,15 +501,15 @@ void print_pref(){
 
     double Avg_Wta = Weighted_Turnaround_time/total_num_pro;
     double Avg_Waiting = Waiting/total_num_pro;
-    double CPU_utilization = running_process*100/getClk();
+    int CPU_utilization = running_process*100/(getClk()-1);
 
     // initialize Scheduler.pref
     log_out_pref=fopen("scheduler.pref","w");
-    fprintf(log_out_pref,"CPU utilization = %f %%\n" , CPU_utilization);
+    fprintf(log_out_pref,"CPU utilization = %d%%\n" , CPU_utilization);
     fflush(log_out_pref);
-    fprintf(log_out_pref,"Avg WTA = %f \n" , Avg_Wta);
+    fprintf(log_out_pref,"Avg WTA = %.2f \n" , Avg_Wta);
     fflush(log_out_pref);
-    fprintf(log_out_pref,"Avg Waiting = %f \n" , Avg_Waiting);
+    fprintf(log_out_pref,"Avg Waiting = %.2f \n" , Avg_Waiting);
     fflush(log_out_pref);
 
 
