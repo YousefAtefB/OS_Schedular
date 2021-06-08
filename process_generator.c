@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
   }
 
   fclose(inFile);
-  display(q->front);
+//  display(q->front);
 
   // 2. Read the chosen scheduling algorithm and its parameters, if there are any from the argument list.
   
@@ -103,12 +103,12 @@ int main(int argc, char *argv[])
 
       if (i == 1)
       {
-        printf("I'm schedular, My process ID is %d, my parent ID : %d \n", getpid(), getppid());
+//        printf("I'm schedular, My process ID is %d, my parent ID : %d \n", getpid(), getppid());
         execv("./scheduler.out", parms);
       }
       else
       {
-        printf("I'm clock, My process ID is %d, my parent ID : %d \n", getpid(), getppid());
+//        printf("I'm clock, My process ID is %d, my parent ID : %d \n", getpid(), getppid());
         execl("./clk.out", "./clk.out", NULL);
       }
     }
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 
   // 6. Send the information to the scheduler at the appropriate time.
   int x = getClk();
-  printf("Current Time is %d\n", x);
+//  printf("Current Time is %d\n", x);
 
   while (!(isempty(q)))
   {
@@ -130,8 +130,8 @@ int main(int argc, char *argv[])
     if (temp != x)
     {
       x = temp;
-      printf("Current Time is %d\n", x);
-      display(q->front);
+//      printf("Current Time is %d\n", x);
+//      display(q->front);
     }
 
     int t = q->front->proc->arrival;
@@ -141,46 +141,38 @@ int main(int argc, char *argv[])
       //now starting to send the process to the scheduler
       int send_val;
       struct msgbuff message;
-      message.mtype = 7; /* arbitrary value */
-      //message.stop = false;
-      printf("Dequeuing ...\n");
+//      printf("Dequeuing ...\n");
       struct process* temp = dequeue(q);
-      printf("sending id=%d\n",temp->id);
+      printf("\ngenerator: sending id=%d\n",temp->id);
       message.p.id=temp->id;message.p.arrival=temp->arrival;
       message.p.runtime=temp->runtime;message.p.priority=temp->priority;
-      
+      message.mtype=1;
       send_val = msgsnd(msgqid, &message, sizeof(message.p), !IPC_NOWAIT);
       if (send_val == -1)
       {
         perror("Errror in send");
       }
-      // display(q->front);
-      // if (!(isempty(q)))
-      // {
-      //   t = q->front->proc->arrival;
-      // }
     }
   }
-  // int send_val;
-  // struct msgbuff message;
-  // message.mtype = 7; /* arbitrary value */
-  // message.stop = true;
-  // message.p = NULL;
-  // send_val = msgsnd(msgqid, &message, sizeof(struct process), !IPC_NOWAIT);
+
+  // send message indicates that all has arrived (message with id =-1) 
+
+  struct msgbuff message;
+  message.p.id=-1;
+  message.mtype=1;
+  printf("\ngenerator: sending id=%d\n",message.p.id);
+  msgsnd(msgqid, &message, sizeof(message.p), !IPC_NOWAIT);
+
+  while(true);
   // 7. Clear clock resources
-  destroyClk(true);
+  destroyClk(false);
   return 0;
 }
 
 void clearResources(int signum)
 {
   //TODO Clears all resources in case of interruption
-  // int send_val;
-  // struct msgbuff message;
-  // message.mtype = 7; /* arbitrary value */
-  // message.stop = true;
-  // message.p = NULL;
-  // send_val = msgsnd(msgqid, &message, sizeof(struct process), !IPC_NOWAIT);
+  printf("\ngenerator: terminating\n");
   destroyClk(true);
   exit(0);
 }

@@ -82,6 +82,11 @@ int msgqid;
 // the .log file that is used to write in it the scheduling flow
 FILE * log_out;
 
+// indicates that all processes arrived
+bool allarrived;
+
+// keep track of number of processes in pcb
+int total_in_pcb;
 
 // OUTPUT NOTE: whenever you encounter ___________print___________  means we should output to file here
 
@@ -93,10 +98,15 @@ void arrived();
 void schedule();
 bool timestep();
 void printstate(int id);
+void clearResources(int signum);
+
 
 int main(int argc, char *argv[])
 {
-    printf("\nwelcome to the scheduler %d\n",getpid());
+    signal(SIGINT, clearResources);
+
+
+    printf("\nscheduler: welcome to the scheduler %d\n",getpid());
 
     // reading the algorithm type from command line
     algo_typ=atoi(argv[1]);
@@ -107,7 +117,7 @@ int main(int argc, char *argv[])
     // reading the total number of processes (upper bound to the number of processes)
     total_num_pro=algo_typ==5?atoi(argv[3]):atoi(argv[2]);
 
-    printf("\nalgo=%d num=%d\n",algo_typ,total_num_pro);
+    printf("\nscheduler:algo_type=%d total_pro=%d\n",algo_typ,total_num_pro);
 
     initClk();
 
@@ -116,14 +126,17 @@ int main(int argc, char *argv[])
 
     initialize();
 
-    while(true)
+    while(!allarrived || total_in_pcb)
     {
         arrived();
-//        schedule();
-//        timestep();
+       schedule();
+       timestep();
     }
 
+    printf("\nscheduler: closing allarriver=%d total_in_pcb=%d \n",allarrived,total_in_pcb);
+
     destroyClk(true);
+
 }
 
 
@@ -136,7 +149,7 @@ void initialize()
     //getting the id of the msgqueue used to communicate with the generator
     msgqid = msgget(1, IPC_CREAT | 0666);
 
-    printf("\nmsgqid=%d\n",msgqid);
+    printf("\nscheduler: msgqid=%d\n",msgqid);
 
     // initialize the blocks with null
     for(int i=0;i<=total_num_pro;i++)
@@ -161,7 +174,7 @@ void initialize()
     }
 
     // intializing the log file
-    printf("\ninitia log\n");
+    printf("\nscheduler: comment in log\n");
     log_out=fopen("scheduler.log","w");
     fprintf(log_out,"#At\ttime\tx\tprocess\ty\tstate\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
     fflush(log_out);
@@ -183,7 +196,16 @@ void arrived()
         if(errno==ENOMSG)
             break;
 
+        if(message.p.id==-1)
+        {
+            printf("\nscheduler:scheduler all arrived\n");
+            allarrived=1;
+            return;
+        }
 
+        printf("\nscheduler: recieved id=%d\n",message.p.id);
+
+        total_in_pcb++;
 
         struct process temp=message.p;
         // making a new block for the process
@@ -197,12 +219,12 @@ void arrived()
         pcb[temp.id]->waiting_time=0;
         pcb[temp.id]->state=ARRIVED;
 
-        printf("\nprint arrived\n");
+        printf("\nscheduler: print arrived\n");
         //___________print___________
         printstate(temp.id);
 
 
-        printf("\ni am forking\n");
+        printf("\nscheduler: forking\n");
 
         int pid=fork();
         if(pid==0)
@@ -217,7 +239,7 @@ void arrived()
         pcb[temp.id]->pid=pid;
 
         // stop the signal after forking it so it won't start right away
-        //kill(pid,SIGSTOP);
+        kill(pid,SIGSTOP);
 
         // insert the process id inside the algorithm datastructure
         switch (algo_typ)
@@ -257,9 +279,11 @@ void schedule()
         {    
             pcb[cur_pro]->state=FINISHED;
             //___________print___________
+            printstate(cur_pro);
             free(pcb[cur_pro]);
             pcb[cur_pro]=NULL;
             cur_pro=-1;
+            total_in_pcb--;
         }
     }
 
@@ -277,6 +301,7 @@ void schedule()
                     pcb[cur_pro]->state=STARTED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
                     //___________print___________
+                    printstate(cur_pro);
                 }
             }
         break;
@@ -291,6 +316,7 @@ void schedule()
                     pcb[cur_pro]->state=STARTED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
                     //___________print___________
+                    printstate(cur_pro);
                 }
             }
         break;
@@ -307,6 +333,7 @@ void schedule()
                     pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
                     //___________print___________
+                    printstate(cur_pro);
                 }
                 else if(pcb[id]->priority < pcb[cur_pro]->priority)
                 {
@@ -316,10 +343,14 @@ void schedule()
                     kill(pcb[cur_pro]->pid,SIGSTOP);
                     Min_Heap_add(heap,cur_pro,pcb[cur_pro]->priority);
                     //___________print___________
+                    printstate(cur_pro);
+
                     kill(pcb[id]->pid,SIGCONT);
                     pcb[id]->state=pcb[id]->state==ARRIVED?STARTED:RESUMED;
                     cur_pro=id;
                     //___________print___________
+                    printstate(cur_pro);
+
                 }
                 else
                 {
@@ -340,6 +371,8 @@ void schedule()
                     pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
                     kill(pcb[cur_pro]->pid,SIGCONT);
                     //___________print___________
+                    printstate(cur_pro);
+
                 }
                 else if(pcb[id]->remaining_time < pcb[cur_pro]->remaining_time)
                 {
@@ -349,10 +382,14 @@ void schedule()
                     kill(pcb[cur_pro]->pid,SIGSTOP);
                     Min_Heap_add(heap,cur_pro,pcb[cur_pro]->remaining_time);
                     //___________print___________
+                    printstate(cur_pro);
+
                     kill(pcb[id]->pid,SIGCONT);
                     pcb[id]->state=pcb[id]->state==ARRIVED?STARTED:RESUMED;
                     cur_pro=id;
                     //___________print___________
+                    printstate(cur_pro);
+
                 }
                 else
                 {
@@ -373,6 +410,7 @@ void schedule()
                     kill(pcb[cur_pro]->pid,SIGSTOP);
                     queue_push(q,cur_pro);
                     //___________print___________
+                    printstate(cur_pro);
                 }
                 // if we reach this part of the code this means either no running process or its quantum has finished
                 // so we ought to get the front process from the queue
@@ -381,6 +419,7 @@ void schedule()
                 kill(pcb[cur_pro]->pid,SIGCONT);
                 pcb[cur_pro]->state=pcb[cur_pro]->state==ARRIVED?STARTED:RESUMED;
                 //___________print___________
+                printstate(cur_pro);
             }
         break;
     }
@@ -414,4 +453,13 @@ void printstate(int id)
     fprintf(log_out,"#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
     getClk(),id,hash[pcb[id]->state],pcb[id]->arrival_time,pcb[id]->running_time,pcb[id]->remaining_time,waiting_time);
     fflush(log_out);
+}
+
+// free everything
+void clearResources(int signum)
+{
+  //TODO Clears all resources in case of interruption
+  printf("\nscheduler: terminating...\n");
+  destroyClk(true);
+  exit(0);
 }
