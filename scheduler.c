@@ -1,7 +1,7 @@
 #include "headers.h"
 
 #include "string.h"
-#include "Queue.c"
+#include "schedulerQueue.c"
 #include "Min-Heap.c"
 
 // algorithms

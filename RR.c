@@ -1,4 +1,4 @@
-#include "Queue.c"
+#include "schedulerQueue.c"
 #include "scheduler.c"
 int fixed_time = 5;
 
