@@ -164,14 +164,16 @@ int main(int argc, char *argv[])
   msgsnd(msgqid, &message, sizeof(message.p), !IPC_NOWAIT);
 
   while(true);
+
   // 7. Clear clock resources
-  destroyClk(false);
+  //destroyClk(false);
   return 0;
 }
 
 void clearResources(int signum)
 {
   //TODO Clears all resources in case of interruption
+  msgctl(msgqid,IPC_RMID,(struct msqid_ds*)0);
   printf("\ngenerator: terminating\n");
   destroyClk(true);
   exit(0);

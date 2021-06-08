@@ -131,12 +131,12 @@ int main(int argc, char *argv[])
         arrived();
        schedule();
        timestep();
+       fflush(stdout);
     }
 
     printf("\nscheduler: closing allarriver=%d total_in_pcb=%d \n",allarrived,total_in_pcb);
 
-    destroyClk(true);
-
+    clearResources(0);
 }
 
 
@@ -185,7 +185,7 @@ void initialize()
 void arrived()
 {
     // recieving processes
-    while(true)
+    while(!allarrived)
     {
         struct msgbuff message;
         errno=0;
@@ -199,6 +199,8 @@ void arrived()
         if(message.p.id==-1)
         {
             printf("\nscheduler:scheduler all arrived\n");
+            message.mtype=10;
+            msgsnd(msgqid,&message,sizeof(message.p),!IPC_NOWAIT);
             allarrived=1;
             return;
         }
@@ -459,6 +461,8 @@ void printstate(int id)
 void clearResources(int signum)
 {
   //TODO Clears all resources in case of interruption
+//  if(!allarrived)
+//   msgctl(msgqid,IPC_RMID,(struct msqid_ds*)0);
   printf("\nscheduler: terminating...\n");
   destroyClk(true);
   exit(0);
