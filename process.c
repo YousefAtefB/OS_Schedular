@@ -10,7 +10,9 @@ int main(int agrc, char *argv[])
 
     initClk();
 
-    printf("process%d at %d: welcome",getClk(),myid);
+    printf("\nprocess%d at %d: welcome\n",myid,getClk());
+    fflush(stdout);
+
 
     //TODO The process needs to get the remaining time from somewhere
     //remainingtime = ??;
@@ -25,7 +27,7 @@ int main(int agrc, char *argv[])
         }
     }
 
-    printf("process%d at %d: goodbye",getClk(),myid);
+    printf("process%d at %d: goodbye",myid,getClk());
 
     destroyClk(false);
 

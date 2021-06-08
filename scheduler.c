@@ -79,6 +79,10 @@ struct msgbuff
 //the msg queue used to communicate with the generator
 int msgqid;
 
+// the .log file that is used to write in it the scheduling flow
+FILE * log_out;
+
+
 // OUTPUT NOTE: whenever you encounter ___________print___________  means we should output to file here
 
 
@@ -88,6 +92,7 @@ void initialize();
 void arrived();
 void schedule();
 bool timestep();
+void printstate(int id);
 
 int main(int argc, char *argv[])
 {
@@ -155,6 +160,11 @@ void initialize()
         break;
     }
 
+    // intializing the log file
+    printf("\ninitia log\n");
+    log_out=fopen("scheduler.log","w");
+    fprintf(log_out,"#At\ttime\tx\tprocess\ty\tstate\tarr\tw\ttotal\tz\tremain\ty\twait\tk\n");
+    fflush(log_out);
 }
 
 // this function is responsible for recieving processes from the proccess_generator,fork it, store it in the pcb and put its id in the 
@@ -174,15 +184,6 @@ void arrived()
             break;
 
 
-        // printf("\n%d ",temp.id);
-        // if(temp.arrival==getClk())
-        //     printf("intime\n");
-        // else if(temp.arrival>getClk())
-        //     printf("early\n");
-        // else
-        //     printf("late\n");
-
-        // continue;
 
         struct process temp=message.p;
         // making a new block for the process
@@ -196,18 +197,16 @@ void arrived()
         pcb[temp.id]->waiting_time=0;
         pcb[temp.id]->state=ARRIVED;
 
+        printf("\nprint arrived\n");
         //___________print___________
+        printstate(temp.id);
+
 
         printf("\ni am forking\n");
 
         int pid=fork();
         if(pid==0)
         {
-            // // get current working directory
-            // char cwd[200];
-            // getcwd(cwd,200);
-            // strcat(cwd,"/process.out");
-            // turn id into string
             char str_id[10],str_running_time[10];
             sprintf(str_id,"%d",temp.id);
             sprintf(str_running_time,"%d",temp.runtime);
@@ -218,7 +217,7 @@ void arrived()
         pcb[temp.id]->pid=pid;
 
         // stop the signal after forking it so it won't start right away
-        kill(pid,SIGSTOP);
+        //kill(pid,SIGSTOP);
 
         // insert the process id inside the algorithm datastructure
         switch (algo_typ)
@@ -404,4 +403,15 @@ bool timestep()
     if(cur_pro_quantum>0)    
         cur_pro_quantum--;
     return true;    
+}
+
+
+// this function is responsible for printing some process into the output file 
+void printstate(int id)
+{
+    int waiting_time=(getClk()-pcb[id]->arrival_time)-(pcb[id]->running_time-pcb[id]->remaining_time);
+    char* hash[]={"arrived","started","stopped","resumed","finished"};
+    fprintf(log_out,"#At\ttime\t%d\tprocess\t%d\t%s\tarr\t%d\ttotal\t%d\tremain\t%d\twait\t%d\n",
+    getClk(),id,hash[pcb[id]->state],pcb[id]->arrival_time,pcb[id]->running_time,pcb[id]->remaining_time,waiting_time);
+    fflush(log_out);
 }

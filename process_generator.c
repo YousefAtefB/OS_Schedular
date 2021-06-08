@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
   // send_val = msgsnd(msgqid, &message, sizeof(struct process), !IPC_NOWAIT);
   // 7. Clear clock resources
   destroyClk(true);
-  exit(0);
+  return 0;
 }
 
 void clearResources(int signum)
@@ -182,4 +182,5 @@ void clearResources(int signum)
   // message.p = NULL;
   // send_val = msgsnd(msgqid, &message, sizeof(struct process), !IPC_NOWAIT);
   destroyClk(true);
+  exit(0);
 }
