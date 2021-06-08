@@ -6,7 +6,7 @@ void clearResources(int);
 struct msgbuff
 {
   long mtype;
-  struct process *p;
+  struct process p;
 };
 
 int msgqid;
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
 {
 
   signal(SIGINT, clearResources);
-  msgqid = msgget(12613, IPC_CREAT | 0644);
+  msgqid = msgget(1, IPC_CREAT | 0666);
   if (msgqid == -1)
   {
     perror("Error in create");
@@ -144,8 +144,12 @@ int main(int argc, char *argv[])
       message.mtype = 7; /* arbitrary value */
       //message.stop = false;
       printf("Dequeuing ...\n");
-      message.p = dequeue(q);
-      send_val = msgsnd(msgqid, &message, sizeof(struct msgbuff)-sizeof(long), !IPC_NOWAIT);
+      struct process* temp = dequeue(q);
+      printf("sending id=%d\n",temp->id);
+      message.p.id=temp->id;message.p.arrival=temp->arrival;
+      message.p.runtime=temp->runtime;message.p.priority=temp->priority;
+      
+      send_val = msgsnd(msgqid, &message, sizeof(message.p), !IPC_NOWAIT);
       if (send_val == -1)
       {
         perror("Errror in send");

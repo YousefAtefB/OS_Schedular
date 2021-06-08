@@ -62,19 +62,19 @@ typedef struct pcb_node pcb_node;
 pcb_node **pcb;
 
 // structs used to recieve element from the process generator through the msgqueue
-typedef struct
+struct process
 {
     int id;
     int arrival;
     int runtime;
     int priority;
-}process;
+};
 
-typedef struct 
+struct msgbuff
 {
   long mtype;
-  struct process *p;
-}msgbuff;
+  struct process p;
+};
 
 //the msg queue used to communicate with the generator
 int msgqid;
@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
     // reading the total number of processes (upper bound to the number of processes)
     total_num_pro=algo_typ==5?atoi(argv[3]):atoi(argv[2]);
 
-    printf("\nalgo=%d num=%d\n",total_num_pro);
+    printf("\nalgo=%d num=%d\n",algo_typ,total_num_pro);
 
     initClk();
 
@@ -129,7 +129,9 @@ void initialize()
     pcb=malloc(sizeof(pcb_node*)*(total_num_pro+1));
 
     //getting the id of the msgqueue used to communicate with the generator
-    msgqid = msgget(12613, IPC_CREAT | 0644);
+    msgqid = msgget(1, IPC_CREAT | 0666);
+
+    printf("\nmsgqid=%d\n",msgqid);
 
     // initialize the blocks with null
     for(int i=0;i<=total_num_pro;i++)
@@ -162,31 +164,27 @@ void arrived()
     // recieving processes
     while(true)
     {
-        process temp;
-        msgbuff message;
-        
-        //getting a process from generator through msg queue 
-        msgrcv(msgqid,&message,sizeof(msgbuff)-sizeof(long),0,IPC_NOWAIT);
+        struct msgbuff message;
+        errno=0;
 
-        if(errno=ENOMSG)
+        //getting a process from generator through msg queue 
+        msgrcv(msgqid,&message,sizeof(message.p),0,IPC_NOWAIT);
+
+        if(errno==ENOMSG)
             break;
 
 
-        //moving the process from the message to variable temp
-        process * t=message.p;
-        temp.id=t->id;temp.arrival=temp.arrival;
-        temp.priority=t->priority;temp.runtime=t->runtime;
+        // printf("\n%d ",temp.id);
+        // if(temp.arrival==getClk())
+        //     printf("intime\n");
+        // else if(temp.arrival>getClk())
+        //     printf("early\n");
+        // else
+        //     printf("late\n");
 
-        printf("\n%d ",temp.id);
-        if(temp.arrival==getClk())
-            printf("intime\n");
-        else if(temp.arrival>getClk())
-            printf("early\n");
-        else
-            printf("late\n");
+        // continue;
 
-        continue;
-
+        struct process temp=message.p;
         // making a new block for the process
         pcb[temp.id]=malloc(sizeof(pcb_node));
 
@@ -200,18 +198,21 @@ void arrived()
 
         //___________print___________
 
+        printf("\ni am forking\n");
+
         int pid=fork();
         if(pid==0)
         {
-            // get current working directory
-            char cwd[200];
-            getcwd(cwd,200);
-            strcat(cwd,"/process.out");
-            // turn running time into string
-            char str_running_time[10];
+            // // get current working directory
+            // char cwd[200];
+            // getcwd(cwd,200);
+            // strcat(cwd,"/process.out");
+            // turn id into string
+            char str_id[10],str_running_time[10];
+            sprintf(str_id,"%d",temp.id);
             sprintf(str_running_time,"%d",temp.runtime);
-            // swap the child with the process code and send it the running time
-            execl(cwd,"./process.out",str_running_time,NULL);
+            // swap the child with the process code and send it its id
+            execl("./process.out","./process.out",str_id,str_running_time,NULL);
         }
 
         pcb[temp.id]->pid=pid;
