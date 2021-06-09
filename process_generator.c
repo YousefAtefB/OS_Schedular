@@ -62,6 +62,8 @@ int main(int argc, char *argv[])
       p1->runtime = atoi(buff);
       fscanf(inFile, "%s", buff);
       p1->priority = atoi(buff);
+      fscanf(inFile, "%s", buff);
+      p1->memsize = atoi(buff);
       enqueue(q, p1);
     }
   }
@@ -143,9 +145,10 @@ int main(int argc, char *argv[])
       struct msgbuff message;
 //      printf("Dequeuing ...\n");
       struct process* temp = dequeue(q);
-      printf("\ngenerator: sending id=%d\n",temp->id);
+      printf("\ngenerator: sending id=%d memsize=%d\n",temp->id,temp->memsize);
       message.p.id=temp->id;message.p.arrival=temp->arrival;
       message.p.runtime=temp->runtime;message.p.priority=temp->priority;
+      message.p.memsize=temp->memsize;
       message.mtype=1;
       send_val = msgsnd(msgqid, &message, sizeof(message.p), !IPC_NOWAIT);
       if (send_val == -1)
@@ -166,7 +169,7 @@ int main(int argc, char *argv[])
   while(true);
 
   // 7. Clear clock resources
-  //destroyClk(false);
+  destroyClk(false);
   return 0;
 }
 

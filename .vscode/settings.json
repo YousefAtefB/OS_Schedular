@@ -1,6 +1,7 @@
 {
     "files.associations": {
         "queue": "cpp",
-        "headers.h": "c"
+        "headers.h": "c",
+        "string.h": "c"
     }
 }

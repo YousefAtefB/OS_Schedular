@@ -8,6 +8,7 @@ struct process
     int arrival;
     int runtime;
     int priority;
+    int memsize;
 };
 ///////////////////////////
 struct node
@@ -45,6 +46,7 @@ void enqueue(struct queue *q, struct process *p)
         temp->proc->arrival=p->arrival;
         temp->proc->runtime=p->runtime;
         temp->proc->priority=p->priority;
+        temp->proc->memsize=p->memsize;
         temp->next = NULL;
         if(q->length!=0)
         {
@@ -69,6 +71,7 @@ struct process* dequeue(struct queue *q)
     p->arrival= q->front->proc->arrival;
     p->runtime= q->front->proc->runtime;
     p->priority= q->front->proc->priority;
+    p->memsize=q->front->proc->memsize;
     tmp = q->front;
     q->front = q->front->next;
     q->length--;
@@ -87,6 +90,7 @@ struct process* peek(struct queue *q)
     p->arrival= q->front->proc->arrival;
     p->runtime= q->front->proc->runtime;
     p->priority= q->front->proc->priority;
+    p->memsize=q->front->proc->memsize;
     return(p);
     }
     return NULL;
